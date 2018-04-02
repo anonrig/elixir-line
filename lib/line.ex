@@ -24,7 +24,11 @@ defmodule Line do
   end
 
   def send(client, name, payload) do
-    Logger.info("Sending event #{name} with payload #{payload}")
+    Logger.info("Sending event #{name} with payload")
+
+    if is_binary(payload[:i]) do
+      Logger.info("Message sent will wait for response")
+    end
 
     json =
       %{

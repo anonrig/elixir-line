@@ -22,7 +22,6 @@ json =
     text: "yagiz",
     id: 1
   }
-  |> Poison.encode!()
 
 Line.send(pid, "hello", json)
 
