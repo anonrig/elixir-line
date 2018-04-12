@@ -6,6 +6,15 @@ defmodule Line do
   def connect(opts \\ []) do
     {:ok, pid} = WebSockex.start("ws://localhost:3000", __MODULE__, :state, opts)
 
+    Logger.debug("Handshake started")
+    handshakeTask = Task.async(fn -> Line.handshake(pid) end)
+    Logger.debug("Handshake ended")
+
+    Task.await(handshakeTask)
+    pid
+  end
+
+  def handshake(pid) do
     json =
       %{
         n: "_h",
@@ -15,20 +24,17 @@ defmodule Line do
       |> Poison.encode!()
 
     WebSockex.send_frame(pid, {:text, json})
-    pid
   end
 
-  def send(client, name, payload, expect_response \\ false) do
-    Logger.info("Sending event #{name} with payload")
+  def send(client, name, payload) do
+    id = UUID.uuid1()
+    Logger.info("Sending event #{name} with id #{id}")
 
     json = %{
       n: name,
-      p: payload
+      p: payload,
+      i: id
     }
-
-    if expect_response do
-      Map.put(json, :i, UUID.uuid1())
-    end
 
     WebSockex.send_frame(client, {:text, json |> Poison.encode!()})
   end
@@ -43,7 +49,7 @@ defmodule Line do
 
     case payload.n do
       "_p" ->
-        Logger.info("Received ping/pong #{msg}")
+        Logger.debug("Received ping/pong #{msg}")
 
         pong_message =
           %{
@@ -59,12 +65,18 @@ defmodule Line do
         {:reply, :state}
 
       "_r" ->
-        Logger.info("Received response #{msg}")
+        if payload.p != "pong" do
+          Logger.info("Received response #{msg}")
+        end
 
         {:ok, :state}
 
       _ ->
         Logger.info("Received an unknown message #{msg}")
+
+        if is_integer(payload.i) do
+          # Waiting for response.
+        end
 
         message =
           %{
