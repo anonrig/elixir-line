@@ -18,7 +18,7 @@ defmodule Line do
     pid
   end
 
-  def send(client, name, payload, expect_response = false) do
+  def send(client, name, payload, expect_response \\ false) do
     Logger.info("Sending event #{name} with payload")
 
     json = %{
