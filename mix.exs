@@ -22,7 +22,8 @@ defmodule Line.MixProject do
   defp deps do
     [
       {:websockex, "~> 0.4.0"},
-      {:poison, "~> 3.1"}
+      {:poison, "~> 3.1"},
+      {:uuid, "~> 1.1"}
     ]
   end
 end
