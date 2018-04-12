@@ -1,43 +1,36 @@
-defmodule Message do
-  @derive [Poison.Encoder]
-  defstruct [:n, :p, :i, :e]
-end
-
 defmodule Line do
   use WebSockex
   require Logger
+  require UUID
 
   def connect(opts \\ []) do
-    WebSockex.start_link("http://localhost:3000", __MODULE__, :state, opts)
-  end
+    {:ok, pid} = WebSockex.start("ws://localhost:3000", __MODULE__, :state, opts)
 
-  def handshake(client) do
     json =
       %{
         n: "_h",
-        i: "1",
+        i: UUID.uuid1(),
         p: %{text: "handshake"}
       }
       |> Poison.encode!()
 
-    WebSockex.send_frame(client, {:text, json})
+    WebSockex.send_frame(pid, {:text, json})
+    pid
   end
 
-  def send(client, name, payload) do
+  def send(client, name, payload, expect_response = false) do
     Logger.info("Sending event #{name} with payload")
 
-    if is_binary(payload[:i]) do
-      Logger.info("Message sent will wait for response")
+    json = %{
+      n: name,
+      p: payload
+    }
+
+    if expect_response do
+      Map.put(json, :i, UUID.uuid1())
     end
 
-    json =
-      %{
-        n: name,
-        p: payload
-      }
-      |> Poison.encode!()
-
-    WebSockex.send_frame(client, {:text, json})
+    WebSockex.send_frame(client, {:text, json |> Poison.encode!()})
   end
 
   def handle_connect(_conn, state) do
@@ -67,6 +60,7 @@ defmodule Line do
 
       "_r" ->
         Logger.info("Received response #{msg}")
+
         {:ok, :state}
 
       _ ->

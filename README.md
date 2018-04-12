@@ -13,15 +13,11 @@ Run `iex -S mix` to run interactive elixir shell.
 Then:
 
 ```elixir
-{:ok, pid} = Line.connect()
+pid = Line.connect()
 
-Line.handshake(pid)
-
-json =
-  %{
-    text: "yagiz",
-    id: 1
-  }
+json = %{
+  text: "yagiz"
+}
 
 Line.send(pid, "hello", json)
 
